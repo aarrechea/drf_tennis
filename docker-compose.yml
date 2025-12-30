@@ -19,4 +19,37 @@ services:
 
     # Run the Django development server
     command: >
-      sh -c "python manage.py runserver 0.0.0.0:8000"
+      sh -c "python manage.py wait_for_db &&
+            python manage.py migrate &&
+            python manage.py runserver 0.0.0.0:8000"
+
+    # Define environment variables for the application
+    environment:
+      - DB_HOST=db
+      - DB_NAME=devdb
+      - DB_USER=devuser
+      - DB_PASS=changeme
+
+    # Ensure the app service starts after the db service
+    depends_on:
+      - db
+
+  db:
+    # Use the official PostgreSQL image from Docker Hub
+    image: postgres:13-alpine
+
+    # Set volume for database data persistence
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+
+    # Set environment variables for PostgreSQL
+    environment:
+      - POSTGRES_DB=devdb
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=changeme
+    
+
+# Define named volumes for persistent data storage
+volumes:
+  dev-db-data:
+
