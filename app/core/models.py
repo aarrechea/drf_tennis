@@ -1,0 +1,51 @@
+"""
+Database models for the application.
+"""
+from django.db import models
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin
+)
+
+
+class UserManager(BaseUserManager):
+    """Manager for custom user model."""
+
+    def normalize_email(self, email):
+        """Normalize the email address by lowercasing the domain part."""
+        email = super().normalize_email(email)
+        return email.lower()
+
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a new user with the given email and password."""
+        if not email:
+            raise ValueError('Users must have an email address')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password):
+        """
+        Create and save a new superuser with the given email
+        and password.
+        """
+        user = self.create_user(email, password)
+        user.is_staff = True
+        user.is_superuser = True
+        user.save(using=self._db)
+        return user
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    """Custom user model that uses email instead of username."""
+    email = models.EmailField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    objects = UserManager()
+
+    USERNAME_FIELD = 'email'
